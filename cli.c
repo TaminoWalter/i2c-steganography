@@ -22,6 +22,9 @@ struct command {
     char *description;
     char *shortDescription;
 
+    char **examples;
+    int exampleCount;
+
     struct command *parent;
 
     struct command *subcommands;
@@ -74,7 +77,7 @@ int executeCommand(struct command cmd, int argc, char **argv, const int offsetI)
             bool found = false;
 
             for (int j = 0; j < cmd.optionCount; j++) {
-                struct option* opt = &cmd.options[j];
+                struct option *opt = &cmd.options[j];
 
                 found = (arg[1] == opt->shorthand) ||
                     (strlen(arg) >= 3 && arg[1] == '-' && strcmp(&arg[2], opt->name) == 0);
@@ -93,6 +96,12 @@ int executeCommand(struct command cmd, int argc, char **argv, const int offsetI)
 
             // the option was not found on the command
             printf("invalid option %s\n", arg);
+            return -1;
+        }
+
+        // verify invalid subcommand (if sub commands are present one must be selected)
+        if (cmd.subcommandCount > 0) {
+            printf("invalid command \"%s\"\n", arg);
             return -1;
         }
 
@@ -122,7 +131,7 @@ int executeCommand(struct command cmd, int argc, char **argv, const int offsetI)
     return 1;
 }
 
-char* getArgument(struct command *cmd, char *name) {
+char *getArgument(struct command *cmd, char *name) {
     for (int i = 0; i < cmd->argumentCount; i++) {
         if (strcmp(cmd->arguments[i].name, name) == 0) {
             return cmd->arguments[i].value;
@@ -139,7 +148,7 @@ int getArgumentInt(struct command *cmd, char *name) {
     return (int)strtol(value, NULL, 10);
 }
 
-char* getOption(struct command *cmd, char *name) {
+char *getOption(struct command *cmd, char *name) {
     for (int i = 0; i < cmd->optionCount; i++) {
         if (strcmp(cmd->options[i].name, name) == 0) {
             return cmd->options[i].value;
@@ -156,17 +165,27 @@ int getOptionInt(struct command *cmd, char *name) {
     return (int)strtol(value, NULL, 10);
 }
 
+char *fullCommandPath(struct command *cmd) {
+    if (cmd->parent == NULL) {
+        return strdup(cmd->name);
+    }
+
+    char *parentName = fullCommandPath(cmd->parent);
+
+    char *fullName = malloc(strlen(parentName) + strlen(cmd->name) + 2);
+    sprintf(fullName, "%s %s", parentName, cmd->name);
+
+    free(parentName);
+
+    return fullName;
+}
+
 void printHelp(struct command *cmd) {
     printf("%s\n", cmd->description);
     printf("\n");
 
     // Compute usage string
-    char *usage;
-    if (cmd->parent != NULL) {
-        asprintf(&usage, "%s %s", cmd->parent->name, cmd->name);
-    } else {
-        usage = cmd->name;
-    }
+    char *usage = fullCommandPath(cmd);
 
     if (cmd->subcommandCount > 0) {
         // first options then subcommands
@@ -189,6 +208,14 @@ void printHelp(struct command *cmd) {
     printf("Usage:\n");
     printf("\t%s\n", usage);
     free(usage);
+
+    if (cmd->exampleCount > 0) {
+        printf("\n");
+        printf("Examples:\n");
+        for (int i = 0; i < cmd->exampleCount; i++) {
+            printf("\t%s\n", cmd->examples[i]);
+        }
+    }
 
     if (cmd->subcommandCount > 0) {
         printf("\n");
@@ -260,7 +287,7 @@ void printHelp(struct command *cmd) {
     }
 
     printf(
-        "\t-h, --%-*s    Show this help dialog\n",
+        "\t-h, --%-*s  Show this help dialog\n",
         maxLen,
         "help"
     );
