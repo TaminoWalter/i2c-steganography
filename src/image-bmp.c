@@ -199,32 +199,3 @@ void extractMessage(const char* inputImage) {
     free(message);
     free(buffer);
 }
-
-
-// ------------------------------------------------------------
-// main()
-// Command-line interface for the tool
-// Usage:
-//   steg embed <input.bmp> <output.bmp> <message>
-//   steg extract <input.bmp>
-// ------------------------------------------------------------
-int main(int argc, char* argv[]) {
-    if (argc < 3) {
-        printf("Usage:\n");
-        printf("  %s embed <input.bmp> <output.bmp> <message>\n", argv[0]);
-        printf("  %s extract <input.bmp>\n", argv[0]);
-        return 1;
-    }
-
-    if (strcmp(argv[1], "embed") == 0 && argc == 5) {
-        embedMessage(argv[2], argv[3], argv[4]);
-    }
-    else if (strcmp(argv[1], "extract") == 0 && argc == 3) {
-        extractMessage(argv[2]);
-    }
-    else {
-        printf("Invalid arguments.\n");
-    }
-
-    return 0;
-}
