@@ -1,17 +1,18 @@
 
 #include <stdio.h>
-#include "cli.c"
+#include "../cli.c"
+#include "../image-bmp.c"
 
 static int runEmbed(struct command *cmd) {
-    printf("RUNNING EMBED\n");
+    char *inputFile = getArgument(cmd, "file");
+    char *text = getArgument(cmd, "content");
 
-    for (int i = 0; i < cmd->argumentCount; i++) {
-        printf("%s: %s\n", cmd->arguments[i].name, cmd->arguments[i].value);
+    char *outputFile = getOption(cmd, "output");
+    if (outputFile == NULL) {
+        outputFile = "out.bmp";
     }
 
-    for (int i = 0; i < cmd->optionCount; i++) {
-        printf("%s: %s\n", cmd->options[i].name, cmd->options[i].value);
-    }
+    embedMessage(inputFile, outputFile, text);
 
     return 0;
 }
@@ -68,6 +69,14 @@ void initEmbedCmd(struct command *parent, struct command *cmd) {
     cmd->exampleCount = 5;
 }
 
+static int runExtract(struct command *cmd) {
+    char *inputFile = getArgument(cmd, "file");
+
+    extractMessage(inputFile);
+
+    return 0;
+}
+
 void initExtractCmd(struct command *parent, struct command *cmd) {
     static struct argument arguments[] = {
         {
@@ -98,7 +107,7 @@ void initExtractCmd(struct command *parent, struct command *cmd) {
         .argumentCount = 1,
         .options = options,
         .optionCount = 2,
-        .run = NULL,
+        .run = runExtract,
     };
 }
 

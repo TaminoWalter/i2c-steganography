@@ -58,16 +58,16 @@ int executeCommand(struct command cmd, int argc, char **argv, const int offsetI)
 
         // check options
         if (strlen(arg) >= 2 && arg[0] == '-') {
-            // verify value is provided
-            if (i + 1 >= argc) {
-                printf("missing value for option %s\n", arg);
-                return -1;
-            }
-
             // show help page
             if (arg[1] == 'h' || strcmp(arg, "--help") == 0) {
                 printHelp(&cmd);
                 return 0;
+            }
+
+            // verify value is provided
+            if (i + 1 >= argc) {
+                printf("missing value for option %s\n", arg);
+                return -1;
             }
 
             // get the value for the option (the argument provided next, after the option's name)
