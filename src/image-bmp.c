@@ -52,7 +52,7 @@ void embedMessage(const char* inputImage, const char* outputImage, const char* m
 
     // Validate BMP file
     if (fileHeader->bfType != 0x4D42) { // 'BM' in little endian
-        printf("Not a BMP file!\n");
+        printf("Not a PNG/BMP file!\n");
         free(buffer);
         return;
     }
@@ -108,7 +108,7 @@ void embedMessage(const char* inputImage, const char* outputImage, const char* m
     fclose(out);
 
     free(buffer);
-    printf("Message embedded successfully!\n");
+    printf("Embedded successfully. Created file %s\n", outputImage);
 }
 
 
@@ -117,7 +117,7 @@ void embedMessage(const char* inputImage, const char* outputImage, const char* m
 // Purpose : Extract a hidden message from a 24-bit BMP image
 // Method  : Reads the LSBs of pixel data
 // ------------------------------------------------------------
-void extractMessage(const char* inputImage) {
+void extractMessage(const char* inputImage, const char* outputFile) {
     FILE* in = fopen(inputImage, "rb");
     if (!in) { printf("Error opening file.\n"); return; }
 
@@ -195,7 +195,48 @@ void extractMessage(const char* inputImage) {
         }
     }
 
-    printf("Extracted message: %s\n", message);
+    if (outputFile != NULL) {
+        FILE* out = fopen(outputFile, "wb");
+        if (out) {
+            fwrite(message, 1, msgLen, out);
+            fclose(out);
+            printf("Successfully extracted content to '%s' (%d bytes).\n", outputFile, msgLen);
+        } else {
+            printf("Error writing output file.\n");
+        }
+    } else {
+        printf("Extracted content:\n%s\n", message);
+    }
+
     free(message);
     free(buffer);
+}
+
+// ------------------------------------------------------------
+// Function: getBmpCapacity
+// Purpose : Calculates the maximum message size (in bytes) that fits in the image
+// Method  : Reads file headers to obtain dimensions: (Width * Height * 3 - 32) / 8
+// ------------------------------------------------------------
+long getBmpCapacity(const char* inputImage) {
+    FILE* in = fopen(inputImage, "rb");
+    if (!in) { return -1; }
+
+    BMPFileHeader fileHeader;
+    BMPInfoHeader infoHeader;
+
+    // Nur die Header lesen
+    if (fread(&fileHeader, sizeof(BMPFileHeader), 1, in) != 1) { fclose(in); return -1; }
+    if (fread(&infoHeader, sizeof(BMPInfoHeader), 1, in) != 1) { fclose(in); return -1; }
+    fclose(in);
+
+    if (fileHeader.bfType != 0x4D42) { return -1; } // Kein BMP
+
+    long width = infoHeader.biWidth;
+    long height = abs(infoHeader.biHeight);
+
+    // Formel: (Pixel * 3 Farbkanäle - 32 Bits für Länge) / 8 Bits pro Byte
+    long maxBits = (width * height * 3) - 32;
+
+    if (maxBits < 0) return 0;
+    return maxBits / 8;
 }

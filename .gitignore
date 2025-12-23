@@ -1,6 +1,9 @@
 # IDEA
 .idea
 
+# CLion
+CMakeLists.txt
+
 # Prerequisites
 *.d
 

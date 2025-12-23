@@ -115,7 +115,7 @@ int executeCommand(struct command cmd, int argc, char **argv, const int offsetI)
         foundArguments++;
     }
 
-    // not all arguments were passed
+    // not all required arguments were passed
     if (foundArguments < cmd.argumentCount) {
         printf("missing arguments\n");
         return -1;
@@ -126,9 +126,9 @@ int executeCommand(struct command cmd, int argc, char **argv, const int offsetI)
         return cmd.run(&cmd);
     }
 
-    // the command cannot be run due to missing run function
-    printf("unknown command\n");
-    return 1;
+    // show help when no argument is passed
+    printHelp(&cmd);
+    return 0;
 }
 
 char *getArgument(struct command *cmd, char *name) {
