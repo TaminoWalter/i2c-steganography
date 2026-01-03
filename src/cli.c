@@ -4,6 +4,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+// Portabilitäts-Fix für Visual Studio (Windows)
+#ifdef _WIN32
+#define strdup _strdup
+#endif
+
 struct argument {
     char *name;
     char *description;
@@ -165,30 +170,43 @@ int getOptionInt(struct command *cmd, char *name) {
     return (int)strtol(value, NULL, 10);
 }
 
+
+
 char* fullCommandPath(struct command* cmd) {
+    // Basis-Fall: Wenn kein Eltern-Kommando existiert
     if (cmd->parent == NULL) {
-        return _strdup(cmd->name);
+        return strdup(cmd->name);
     }
 
-    char* parentName = fullCommandPath(cmd->parent);
+    // 1. Rekursiver Aufruf für den Pfad des Eltern-Elements
+    char* parentPath = fullCommandPath(cmd->parent);
+    if (parentPath == NULL) return NULL;
 
-    // 1. Länge berechnen und in Variable speichern
-    size_t needed = strlen(parentName) + strlen(cmd->name) + 2; // +1 Leerzeichen, +1 Nullterminator
-    char* fullName = malloc(needed);
+    // 2. Benötigten Speicher berechnen: 
+    // Länge(ElternPfad) + 1 (Leerzeichen) + Länge(Eigenname) + 1 (Nullterminator)
+    size_t needed = strlen(parentPath) + strlen(cmd->name) + 2;
+
+    // 3. Speicher auf dem Heap reservieren
+    char* fullName = (char*)malloc(needed);
 
     if (fullName == NULL) {
-        free(parentName);
+        free(parentPath);
         return NULL;
     }
 
-    // 2. Nutze 'needed' statt 'sizeof(fullName)'
-    int result = snprintf(fullName, needed, "%s %s", parentName, cmd->name);
+    // 4. Den String zusammenbauen
+    // WICHTIG: Nutze 'needed' als Größenangabe, nicht sizeof(fullName)!
+    int result = snprintf(fullName, needed, "%s %s", parentPath, cmd->name);
 
-    if (result < 0 || result >= needed) {
-        // Fehlerbehandlung oder Abschneidung erkannt
+    // 5. Sicherheitsprüfung (snprintf gibt bei Fehlern -1 zurück)
+    if (result < 0) {
+        free(fullName);
+        free(parentPath);
+        return NULL;
     }
 
-    free(parentName);
+    // 6. Temporären Eltern-String freigeben (WICHTIG gegen Memory Leaks!)
+    free(parentPath);
 
     return fullName;
 }
