@@ -1,10 +1,39 @@
 #include <stdio.h>
-#include <strings.h> // Wichtig für strcasecmp auf Mac/Linux
 
 // link other c files
 #include "cli.c"
 #include "image-bmp.c"
 #include "image-png.c"
+
+#ifdef _WIN32
+#include <string.h>
+#define strcasecmp _stricmp
+#define strncasecmp _strnicmp
+#else
+#include <strings.h>
+#endif
+
+int asprintf(char** strp, const char* fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+
+    // 1. Berechne die benötigte Länge (ohne zu schreiben)
+    int len = vsnprintf(NULL, 0, fmt, args);
+    va_end(args);
+
+    if (len < 0) return -1;
+
+    // 2. Speicher reservieren (+1 für den Null-Terminator)
+    *strp = (char*)malloc(len + 1);
+    if (!*strp) return -1;
+
+    // 3. Tatsächlich in den neuen Speicher schreiben
+    va_start(args, fmt);
+    len = vsnprintf(*strp, len + 1, fmt, args);
+    va_end(args);
+
+    return len;
+}
 
 // Kleine Hilfsfunktion, um die Dateiendung zu finden
 const char *getFileExtension(const char *filename) {

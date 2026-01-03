@@ -167,13 +167,20 @@ int getOptionInt(struct command *cmd, char *name) {
 
 char *fullCommandPath(struct command *cmd) {
     if (cmd->parent == NULL) {
-        return strdup(cmd->name);
+        return _strdup(cmd->name);
     }
 
     char *parentName = fullCommandPath(cmd->parent);
 
     char *fullName = malloc(strlen(parentName) + strlen(cmd->name) + 2);
-    sprintf(fullName, "%s %s", parentName, cmd->name);
+    
+    int result = snprintf(fullName, sizeof(fullName), "%s %s", parentName, cmd->name);
+    if (result < 0) {
+        // Fehler beim Formatieren
+    }
+    else if (result >= sizeof(fullName)) {
+        // String wurde abgeschnitten (Puffer war zu klein)
+    }
 
     free(parentName);
 
@@ -235,7 +242,7 @@ void printHelp(struct command *cmd) {
                 "\t%-*s  %s\n",
                 maxLen,
                 cmd->subcommands[i].name,
-                cmd->subcommands[i].shortDescription ?: ""
+                cmd->subcommands[i].shortDescription ? cmd->subcommands[i].shortDescription : ""
             );
         }
     }
@@ -258,7 +265,7 @@ void printHelp(struct command *cmd) {
                 "\t%-*s    %s\n",
                 maxLen,
                 cmd->arguments[i].name,
-                cmd->arguments[i].description ?: ""
+                cmd->arguments[i].description ? cmd->arguments[i].description : ""
             );
         }
     }
@@ -282,7 +289,7 @@ void printHelp(struct command *cmd) {
             cmd->options[i].shorthand,
             maxLen,
             cmd->options[i].name,
-            cmd->options[i].description ?: ""
+            cmd->options[i].description ? cmd->options[i].description : ""
         );
     }
 
