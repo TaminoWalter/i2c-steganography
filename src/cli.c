@@ -165,21 +165,27 @@ int getOptionInt(struct command *cmd, char *name) {
     return (int)strtol(value, NULL, 10);
 }
 
-char *fullCommandPath(struct command *cmd) {
+char* fullCommandPath(struct command* cmd) {
     if (cmd->parent == NULL) {
         return _strdup(cmd->name);
     }
 
-    char *parentName = fullCommandPath(cmd->parent);
+    char* parentName = fullCommandPath(cmd->parent);
 
-    char *fullName = malloc(strlen(parentName) + strlen(cmd->name) + 2);
-    
-    int result = snprintf(fullName, sizeof(fullName), "%s %s", parentName, cmd->name);
-    if (result < 0) {
-        // Fehler beim Formatieren
+    // 1. Länge berechnen und in Variable speichern
+    size_t needed = strlen(parentName) + strlen(cmd->name) + 2; // +1 Leerzeichen, +1 Nullterminator
+    char* fullName = malloc(needed);
+
+    if (fullName == NULL) {
+        free(parentName);
+        return NULL;
     }
-    else if (result >= sizeof(fullName)) {
-        // String wurde abgeschnitten (Puffer war zu klein)
+
+    // 2. Nutze 'needed' statt 'sizeof(fullName)'
+    int result = snprintf(fullName, needed, "%s %s", parentName, cmd->name);
+
+    if (result < 0 || result >= needed) {
+        // Fehlerbehandlung oder Abschneidung erkannt
     }
 
     free(parentName);
